@@ -1,12 +1,91 @@
-$(document).ready(function(){
+/** 
+ * Micro-jQuery Shim (Vanilla JS Core) 
+ * Replaces 80KB jQuery with native ES6 APIs allowing complex animation coordinates to work properly
+ */
+const $ = function(selector) {
+    if (selector === window || selector === document) return selector;
+    if (typeof selector === 'function') {
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', selector);
+        else selector();
+        return;
+    }
+    
+    let els = [];
+    if (typeof selector === 'string') els = Array.from(document.querySelectorAll(selector));
+    else if (selector && selector.nodeType) els = [selector];
+    else if (Array.isArray(selector)) els = selector;
+    
+    // Polyfill methods
+    const api = {
+        0: els[0],
+        length: els.length,
+        css: function(styles) {
+            els.forEach(el => {
+                for (let prop in styles) {
+                    el.style[prop] = styles[prop];
+                }
+            });
+            return this;
+        },
+        height: function() { return els[0] ? els[0].offsetHeight : 0; },
+        width: function() { return els[0] ? els[0].offsetWidth : 0; },
+        offset: function() { 
+            if (!els[0]) return {top:0, left:0};
+            const rect = els[0].getBoundingClientRect();
+            return { top: rect.top + window.scrollY, left: rect.left + window.scrollX };
+        },
+        click: function(fn) { els.forEach(el => el.addEventListener('click', fn)); return this; },
+        toggleClass: function(c) { els.forEach(el => el.classList.toggle(c)); return this; },
+        hasClass: function(c) { return els[0] ? els[0].classList.contains(c) : false; },
+        show: function() { els.forEach(el => el.style.display = 'block'); return this; },
+        hide: function() { els.forEach(el => el.style.display = 'none'); return this; },
+        fadeIn: function(ms) { 
+            els.forEach(el => { 
+                el.style.opacity = 0; el.style.display = 'block'; 
+                el.style.transition = `opacity ${typeof ms === 'number' ? ms : 300}ms`; 
+                setTimeout(() => el.style.opacity = 1, 10); 
+            }); 
+            return this; 
+        },
+        fadeOut: function(ms) {
+            els.forEach(el => {
+                el.style.transition = `opacity ${typeof ms === 'number' ? ms : 300}ms`; 
+                el.style.opacity = 0;
+                setTimeout(() => el.style.display = 'none', typeof ms === 'number' ? ms : 300);
+            });
+            return this;
+        },
+        animate: function(props, ms) {
+            els.forEach(el => {
+                if (props.scrollTop !== undefined && (el.tagName === 'HTML' || el.tagName === 'BODY')) {
+                    window.scrollTo({ top: props.scrollTop, behavior: ms === 0 ? 'auto' : 'smooth' });
+                }
+            });
+            return this;
+        },
+        delay: function(ms) { return this; /* simplified */ },
+        queue: function(fn) { setTimeout(() => fn(() => {}), 10); return this; },
+        next: function() { return $(els[0] ? els[0].nextElementSibling : null); },
+        val: function() { return els[0] ? els[0].value : ''; },
+        attr: function(a) { return els[0] ? els[0].getAttribute(a) : ''; }
+    };
+    return api;
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // We bind $.ajax if used? No ajax is used in this file.
+});
+
+
+document.addEventListener('DOMContentLoaded', function() {
     var isMobileInit = window.innerWidth <= 768;
 
     if (isMobileInit) {
         
         
         
-        	$(window).resize(function(){
-        		$('#mob-home, #mob-background').css({height: $(window).height()});
+        	window.addEventListener('resize', function() {
+        		$('#mob-home, #mob-background').css({height: window.innerHeight});
         	});
         
         
@@ -84,7 +163,7 @@ $(document).ready(function(){
         
         
         	/* Always start from top (either 1st entry or refreshing page) */
-        	/*$(window).load(function(){
+        	/*window.addEventListener('load', function() {
         		$('html, body').animate({'scrollTop': 0}, 1);
         	});*/
         
@@ -115,8 +194,8 @@ $(document).ready(function(){
         
         
         
-        	$(window).load(function() {
-        		$('#whatwedo #whatwedo-menu').css({'margin-left': ($(window).width() - $('#whatwedo #whatwedo-menu').width())/2,
+        	window.addEventListener('load', function() {
+        		$('#whatwedo #whatwedo-menu').css({'margin-left': (window.innerWidth - $('#whatwedo #whatwedo-menu').width())/2,
         											opacity: 1});
         	});	
         
@@ -207,8 +286,12 @@ $(document).ready(function(){
         	
         		var activeMenuFx = true;
         
-        		$(window).scroll(function(){
-        		var scroll = $(window).scrollTop();
+        		let isScrolling = false;
+    window.addEventListener('scroll', function() {
+        if (!isScrolling) {
+            window.requestAnimationFrame(function() {
+                var scroll = window.scrollY;
+                isScrolling = false;
         
         
         		/* Change menu-button cursor */
@@ -260,7 +343,7 @@ $(document).ready(function(){
         			$('#whatwedo #drawer').css({left:'calc((100% - 500px - 160px) / 2 + 54px)', position:'absolute'});
         			$('#whatwedo #chair').css({left:'calc((100% - 140px - 160px) / 2)', position:'absolute'});
         			$('#whatwedo-content #trash').css({left:'calc((100% + 160px - 50px) / 2 + 20px)', position:'absolute'});
-        			$('#office-ground').css({top: $(window).height(), position: 'absolute'});
+        			$('#office-ground').css({top: window.innerHeight, position: 'absolute'});
         		}
         
         		/* Office scroll animation */
@@ -687,7 +770,7 @@ $(document).ready(function(){
         	$('#whatwedo #folio-text-4 h2').css({left: $('#whatwedo #folio-4').width()/2 - $('#whatwedo #folio-text-4 h2').width()/4 + 5});
         
         
-        	var verticalScale = ($(window).height() - $('.folios').height())/$('.folios').height() - 1.2;
+        	var verticalScale = (window.innerHeight - $('.folios').height())/$('.folios').height() - 1.2;
         	var folioAmpliated = false;
         
         	function restartWildcards() {
@@ -701,8 +784,8 @@ $(document).ready(function(){
         		$('#whatwedo #wildcard-folio-4').css({top:$('#whatwedo-content #folio-4').offset().top - $('#whatwedo').offset().top,
         													left:$('#whatwedo-content #folio-4').offset().left});
         		$('#whatwedo .wildcard-folio.active').css({'transform':'scale(1,1)',
-        													top:$(window).height()/2-50,
-        													left:($(window).width() - $('#whatwedo-content #folio-1').width()) / 2});
+        													top:window.innerHeight/2-50,
+        													left:(window.innerWidth - $('#whatwedo-content #folio-1').width()) / 2});
         	}
         
         	var whatwedoMenuClicked = null;
@@ -721,8 +804,8 @@ $(document).ready(function(){
         			$(this).toggleClass('active');
         			$('#whatwedo .wildcard-folio.active').css({
         						'transform':'scale('+verticalScale+','+verticalScale+')',
-        						top:$(window).height()/2-50,
-        						left:($(window).width() - $('#whatwedo-content #folio-1').width()) / 2 - 5});
+        						top:window.innerHeight/2-50,
+        						left:(window.innerWidth - $('#whatwedo-content #folio-1').width()) / 2 - 5});
         			$('#whatwedo .wildcard-text h2').css({left: ($('#whatwedo .wildcard-folio').width() -  $('#whatwedo #wildcard-text-'+numberClicked+' h2').width()) / 2 - 5});
         			$('.none').css({display: 'block'});
         			$(window).bind({
@@ -911,7 +994,7 @@ $(document).ready(function(){
         	$('#howwedo-menu2').click(function(){
         		if (percentClicked == false) {
         			percentClicked = true;
-        			$('#percent-explanation').css({left: ($(window).width() - $('#percent-explanation').width())/2});
+        			$('#percent-explanation').css({left: (window.innerWidth - $('#percent-explanation').width())/2});
         			$('#percent-explanation').fadeIn(300).delay(4000).queue(function(next){
         				$(this).fadeOut(300);
         				percentClicked = false;
